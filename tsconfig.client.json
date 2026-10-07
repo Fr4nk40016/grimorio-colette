@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "system",
     "rootDir": "./src",
-    "outFile": "./public/script.js",
+    "outFile": "./script.js",
     "moduleResolution": "node",
     "strict": false,
     "skipLibCheck": true,
