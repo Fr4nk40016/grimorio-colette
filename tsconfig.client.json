@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "system",
+    "rootDir": "./src",
+    "outFile": "./public/script.js",
+    "moduleResolution": "node",
+    "strict": false,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": [
+    "src/client.ts"
+  ]
+}

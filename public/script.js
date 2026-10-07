@@ -1,0 +1,525 @@
+"use strict";
+// --- GESTIONE TEMA (CHIARO/SCURO) ---
+const themeToggle = document.getElementById('theme-toggle');
+const currentTheme = localStorage.getItem('colette-theme') || 'dark';
+if (currentTheme === 'light') {
+    document.body.classList.add('light-theme');
+    if (themeToggle)
+        themeToggle.innerText = '🌙';
+}
+themeToggle?.addEventListener('click', () => {
+    document.body.classList.toggle('light-theme');
+    if (document.body.classList.contains('light-theme')) {
+        localStorage.setItem('colette-theme', 'light');
+        themeToggle.innerText = '🌙';
+    }
+    else {
+        localStorage.setItem('colette-theme', 'dark');
+        themeToggle.innerText = '🌞';
+    }
+});
+// --- NAVIGAZIONE SCHEDE E ACCESSO MASTER ---
+const navBtns = document.querySelectorAll('.nav-btn');
+const pageSections = document.querySelectorAll('.page-section');
+const PIN_ADMIN = "1234";
+let isAdmin = false;
+navBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        if (!targetId)
+            return;
+        if (btn.classList.contains('lock-btn') && !isAdmin) {
+            const pin = prompt("Inserisci il PIN per accedere ai dati riservati:");
+            if (pin === PIN_ADMIN) {
+                isAdmin = true;
+                document.querySelectorAll('.lock-btn').forEach(lockBtn => {
+                    lockBtn.innerHTML = lockBtn.innerHTML.replace('🔒', '🔓');
+                    lockBtn.classList.add('unlocked');
+                });
+                alert("Accesso consentito! Ora puoi vedere la scheda e gestire i post.");
+            }
+            else {
+                alert("PIN errato!");
+                return;
+            }
+        }
+        navBtns.forEach(b => b.classList.remove('active'));
+        pageSections.forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(targetId)?.classList.add('active');
+    });
+});
+// --- INTERAZIONI CON FIRESTORE ---
+window.addEventListener('load', () => {
+    const db = window.db;
+    const { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc } = window.fb || {};
+    if (!db)
+        return;
+    // === GESTIONE DIARIO ===
+    const publishBtn = document.getElementById('publish-post-btn');
+    const postTitleInput = document.getElementById('new-post-title');
+    const postContentInput = document.getElementById('new-post-content');
+    publishBtn?.addEventListener('click', async () => {
+        const title = postTitleInput?.value.trim();
+        const content = postContentInput?.value.trim();
+        if (!title || !content)
+            return alert("Compila sia il titolo che il testo del post.");
+        try {
+            await addDoc(collection(db, "posts"), {
+                title: title, content: content, createdAt: new Date(), swords: 0, shields: 0, comments: []
+            });
+            if (postTitleInput)
+                postTitleInput.value = "";
+            if (postContentInput)
+                postContentInput.value = "";
+            alert("Post pubblicato!");
+        }
+        catch (error) {
+            console.error("Errore:", error);
+        }
+    });
+    const journalFeed = document.getElementById('journal-feed');
+    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+        if (!journalFeed)
+            return;
+        journalFeed.innerHTML = "";
+        snapshot.forEach((docSnap) => {
+            const post = docSnap.data();
+            const postId = docSnap.id;
+            const article = document.createElement('article');
+            article.className = 'card post-card';
+            article.innerHTML = `
+        <div class="post-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>${post.title}</h3>
+          ${isAdmin ? `<button class="delete-post-btn" data-id="${postId}" style="background: transparent; border: 1px solid #e74c3c; color: #e74c3c; border-radius: 4px; padding: 4px 8px; cursor: pointer;">🗑️ Elimina</button>` : ''}
+        </div>
+        <div class="post-body"><p>${post.content}</p></div>
+        <div class="post-footer">
+          <div class="reactions">
+            <button class="react-btn" data-id="${postId}" data-type="swords">⚔️ ${post.swords || 0}</button>
+            <button class="react-btn" data-id="${postId}" data-type="shields">🛡️ ${post.shields || 0}</button>
+          </div>
+          <div class="comments-container">
+            <h4>Commenti dei giocatori:</h4>
+            <div class="comments-list">
+              ${(post.comments || []).map((c) => `<p><strong>${c.author}:</strong>${c.text}</p>`).join('')}
+            </div>
+            <div class="add-comment-form">
+              <input type="text" placeholder="Nome PG..." class="comment-author" id="author-${postId}">
+              <input type="text" placeholder="Scrivi commento..." class="comment-text" id="text-${postId}">
+              <button class="send-comment-btn" data-id="${postId}">Invia</button>
+            </div>
+          </div>
+        </div>
+      `;
+            journalFeed.appendChild(article);
+        });
+        document.querySelectorAll('.delete-post-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const pId = btn.getAttribute('data-id');
+                if (pId && confirm("Sei sicuro di eliminare questo post?"))
+                    await deleteDoc(doc(db, "posts", pId));
+            });
+        });
+        document.querySelectorAll('.react-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const pId = btn.getAttribute('data-id');
+                const type = btn.getAttribute('data-type');
+                if (pId && type)
+                    await updateDoc(doc(db, "posts", pId), { [type]: increment(1) });
+            });
+        });
+        document.querySelectorAll('.send-comment-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const pId = btn.getAttribute('data-id');
+                if (!pId)
+                    return;
+                const author = document.getElementById(`author-${pId}`)?.value.trim();
+                const text = document.getElementById(`text-${pId}`)?.value.trim();
+                if (author && text) {
+                    await updateDoc(doc(db, "posts", pId), { comments: arrayUnion({ author, text }) });
+                    document.getElementById(`author-${pId}`).value = "";
+                    document.getElementById(`text-${pId}`).value = "";
+                }
+                else
+                    alert("Inserisci nome e messaggio.");
+            });
+        });
+    });
+    // === MOTORE SCHEDA PERSONAGGIO ===
+    const charDocRef = doc(db, "character", "colette-v2");
+    let charData = {
+        name: "Nicolette Aurelia Valen", classLevel: "Ladro - Livello 3", profBonus: 2, ac: 15,
+        level: 3, toughFeat: false,
+        hpCurrent: 24, hpTemp: 0, hitDice: { total: "3d8", used: 0 },
+        deathSaves: { successes: [false, false, false], failures: [false, false, false] },
+        currency: { cp: 0, sp: 0, ep: 0, gp: 15, pp: 0 },
+        stats: { str: 10, dex: 16, con: 14, int: 8, wis: 10, cha: 16 },
+        saves: { str: false, dex: true, con: false, int: true, wis: false, cha: false },
+        skills: {
+            "Acrobazia": { ability: "dex", prof: true }, "Addestrare Animali": { ability: "wis", prof: false },
+            "Arcano": { ability: "int", prof: false }, "Atletica": { ability: "str", prof: false },
+            "Furtività": { ability: "dex", prof: false }, "Indagare": { ability: "int", prof: false },
+            "Inganno": { ability: "cha", prof: true }, "Intimidire": { ability: "cha", prof: false },
+            "Intuizione": { ability: "wis", prof: false }, "Intrattenere": { ability: "cha", prof: false },
+            "Medicina": { ability: "wis", prof: false }, "Natura": { ability: "int", prof: false },
+            "Percezione": { ability: "wis", prof: false }, "Persuasione": { ability: "cha", prof: true },
+            "Rapidità di mano": { ability: "dex", prof: false }, "Religione": { ability: "int", prof: false },
+            "Sopravvivenza": { ability: "wis", prof: false }, "Storia": { ability: "int", prof: false }
+        },
+        attacks: [
+            { name: "Spada Corta", stat: "dex", magicMod: 0, damage: "1d6+3 taglienti" },
+            { name: "Pugnale", stat: "dex", magicMod: 0, damage: "1d4+3 perforanti" }
+        ],
+        inventory: [
+            { name: "Cuoio borchiato", qty: 1, type: "Armatura" },
+            { name: "Spada corta", qty: 2, type: "Arma" },
+            { name: "Pugnali", qty: 5, type: "Arma" },
+            { name: "Arnesi da scasso", qty: 1, type: "Strumento" }
+        ],
+        feats: [
+            { name: "Attacco Furtivo (2d6)", type: "Classe", desc: "Se hai vantaggio al TxC, o un alleato è entro 1,5m, infliggi danni extra." },
+            { name: "Azione Scaltra", type: "Classe", desc: "Puoi Nasconderti, Disimpegnarti o Scattare come Azione Bonus." }
+        ]
+    };
+    const getModifier = (score) => Math.floor(((score || 10) - 10) / 2);
+    const formatMod = (mod) => mod >= 0 ? `+${mod}` : `${mod}`;
+    const saveCharData = async () => {
+        if (!isAdmin)
+            return;
+        const statusEl = document.getElementById('save-status');
+        if (statusEl) {
+            statusEl.innerText = "Salvataggio...";
+            statusEl.style.color = "#aaaaaa";
+            statusEl.style.opacity = "1";
+        }
+        await setDoc(charDocRef, charData);
+        if (statusEl) {
+            statusEl.innerText = "Salvato ✓";
+            statusEl.style.color = "#50c878";
+            setTimeout(() => { statusEl.style.opacity = "0"; }, 2000);
+        }
+    };
+    const setInputValue = (id, val) => {
+        const el = document.getElementById(id);
+        if (el)
+            el.value = val.toString();
+    };
+    const setInnerText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el)
+            el.innerText = text;
+    };
+    const renderSheet = () => {
+        setInputValue('char-name', charData.name || '');
+        setInputValue('char-class', charData.classLevel || '');
+        setInputValue('char-prof-bonus', charData.profBonus ?? 2);
+        setInputValue('char-ac', charData.ac ?? 15);
+        setInputValue('char-hp-current', charData.hpCurrent ?? 24);
+        setInputValue('char-hp-temp', charData.hpTemp ?? 0);
+        setInputValue('char-hd-total', charData.hitDice?.total ?? '3d8');
+        setInputValue('char-hd-used', charData.hitDice?.used ?? 0);
+        // CALCOLO AUTOMATICO PF SECONDO LE REGOLE DI D&D (Dado Ladro = d8 -> Max 1° liv = 8, Media successivi = 5)
+        const lvl = charData.level ?? 3;
+        const conMod = getModifier(charData.stats?.con ?? 10);
+        let baseHpAtLevel1 = 8;
+        let baseHpLaterLevels = (lvl > 1) ? (lvl - 1) * 5 : 0;
+        let totalConBonus = conMod * lvl;
+        let toughBonus = charData.toughFeat ? (lvl * 2) : 0;
+        const totalMaxHp = baseHpAtLevel1 + baseHpLaterLevels + totalConBonus + toughBonus;
+        setInputValue('char-level', lvl);
+        const toughCheckbox = document.getElementById('char-tough');
+        if (toughCheckbox)
+            toughCheckbox.checked = !!charData.toughFeat;
+        setInnerText('char-hp-max-display', totalMaxHp.toString());
+        charData.hpMax = totalMaxHp; // Sincronizza nel database
+        setInputValue('coin-cp', charData.currency?.cp ?? 0);
+        setInputValue('coin-sp', charData.currency?.sp ?? 0);
+        setInputValue('coin-ep', charData.currency?.ep ?? 0);
+        setInputValue('coin-gp', charData.currency?.gp ?? 15);
+        setInputValue('coin-pp', charData.currency?.pp ?? 0);
+        [0, 1, 2].forEach(i => {
+            const sCb = document.getElementById(`ds-s-${i}`);
+            const fCb = document.getElementById(`ds-f-${i}`);
+            if (sCb)
+                sCb.checked = charData.deathSaves?.successes[i] || false;
+            if (fCb)
+                fCb.checked = charData.deathSaves?.failures[i] || false;
+        });
+        const dexMod = getModifier(charData.stats?.dex);
+        const chaMod = getModifier(charData.stats?.cha);
+        setInnerText('char-initiative', formatMod(dexMod + chaMod));
+        ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+            const score = charData.stats?.[stat] ?? 10;
+            setInputValue(`score-${stat}`, score);
+            setInnerText(`mod-${stat}`, formatMod(getModifier(score)));
+        });
+        const savesList = document.getElementById('saves-list');
+        if (savesList && charData.saves) {
+            savesList.innerHTML = '';
+            const statNames = { str: 'Forza', dex: 'Destrezza', con: 'Costituzione', int: 'Intelligenza', wis: 'Saggezza', cha: 'Carisma' };
+            ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => {
+                const isProf = charData.saves[stat];
+                const totalBonus = getModifier(charData.stats?.[stat]) + (isProf ? (charData.profBonus ?? 2) : 0);
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <label style="cursor:pointer; display:flex; gap:10px; align-items:center; ${isProf ? 'color: var(--text-gold); font-weight: bold;' : ''}">
+                        <input type="checkbox" class="save-cb" data-stat="${stat}" ${isProf ? 'checked' : ''}>
+                        ${statNames[stat]}
+                    </label>
+                    <span>${formatMod(totalBonus)}</span>
+                `;
+                savesList.appendChild(li);
+            });
+            document.querySelectorAll('.save-cb').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    charData.saves[e.target.getAttribute('data-stat')] = e.target.checked;
+                    renderSheet();
+                    saveCharData();
+                });
+            });
+        }
+        const skillsList = document.getElementById('skills-list');
+        if (skillsList && charData.skills) {
+            skillsList.innerHTML = '';
+            Object.entries(charData.skills).forEach(([skillName, data]) => {
+                const statMod = getModifier(charData.stats?.[data.ability]);
+                const totalBonus = statMod + (data.prof ? (charData.profBonus ?? 2) : 0);
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <label style="cursor:pointer; display:flex; gap:10px; align-items:center; ${data.prof ? 'color: var(--text-gold); font-weight: bold;' : ''}">
+                        <input type="checkbox" class="skill-cb" data-skill="${skillName}" ${data.prof ? 'checked' : ''}>
+                        ${skillName} <span style="font-size:0.7rem; color:#666;">(${data.ability.toUpperCase()})</span>
+                    </label>
+                    <span>${formatMod(totalBonus)}</span>
+                `;
+                skillsList.appendChild(li);
+            });
+            document.querySelectorAll('.skill-cb').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    charData.skills[e.target.getAttribute('data-skill')].prof = e.target.checked;
+                    renderSheet();
+                    saveCharData();
+                });
+            });
+        }
+        const attacksList = document.getElementById('attacks-list');
+        if (attacksList && charData.attacks) {
+            attacksList.innerHTML = '';
+            charData.attacks.forEach((atk, index) => {
+                let calculatedBonus = atk.bonus || "+0";
+                if (atk.stat && atk.stat !== 'none') {
+                    const statMod = getModifier(charData.stats?.[atk.stat] ?? 10);
+                    const prof = charData.profBonus ?? 2;
+                    const magic = atk.magicMod ? parseInt(atk.magicMod) : 0;
+                    calculatedBonus = formatMod(statMod + prof + magic);
+                }
+                const magicBadge = (atk.magicMod && atk.magicMod > 0) ? `<span style="font-size:0.7rem; color:#50c878; border:1px solid #50c878; border-radius:10px; padding:2px 5px; margin-left:5px;">+${atk.magicMod}</span>` : '';
+                const div = document.createElement('div');
+                div.className = 'attack-item';
+                div.innerHTML = `
+                    <div class="attack-header">
+                        <span>${atk.name} ${magicBadge}</span>
+                        <button class="icon-btn delete-atk-btn" data-index="${index}">❌</button>
+                    </div>
+                    <div class="attack-stats">
+                        <span><strong>TxC:</strong> <span style="color:var(--text-gold); font-weight:bold;">${calculatedBonus}</span></span>
+                        <span><strong>Danni:</strong> ${atk.damage}</span>
+                    </div>
+                `;
+                attacksList.appendChild(div);
+            });
+            document.querySelectorAll('.delete-atk-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    charData.attacks.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1);
+                    renderSheet();
+                    saveCharData();
+                });
+            });
+        }
+        // Render Inventario
+        const invUl = document.getElementById('inventory-list');
+        if (invUl && charData.inventory) {
+            invUl.innerHTML = '';
+            charData.inventory.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="item-badge">${item.type}</span>
+                        <span>${item.name} <strong style="color:var(--text-gold);">x${item.qty}</strong></span>
+                    </div>
+                    <button class="icon-btn delete-inv-btn" data-index="${index}">❌</button>
+                `;
+                invUl.appendChild(li);
+            });
+            document.querySelectorAll('.delete-inv-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    charData.inventory.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1);
+                    renderSheet();
+                    saveCharData();
+                });
+            });
+        }
+        // Render Talenti Avanzato
+        const featsUl = document.getElementById('feats-list');
+        if (featsUl && charData.feats) {
+            featsUl.innerHTML = '';
+            charData.feats.forEach((feat, index) => {
+                const li = document.createElement('li');
+                li.style.flexDirection = 'column';
+                li.style.alignItems = 'stretch';
+                li.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span class="item-badge">${feat.type || 'Altro'}</span>
+                            <span style="font-weight:bold; color:var(--text-gold);">${feat.name}</span>
+                        </div>
+                        <button class="icon-btn delete-feat-btn" data-index="${index}">❌</button>
+                    </div>
+                    ${feat.desc ? `<div class="feat-desc">${feat.desc}</div>` : ''}
+                `;
+                featsUl.appendChild(li);
+            });
+            document.querySelectorAll('.delete-feat-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    charData.feats.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1);
+                    renderSheet();
+                    saveCharData();
+                });
+            });
+        }
+    };
+    // --- CARICAMENTO DA FIRESTORE ---
+    getDoc(charDocRef).then((docSnap) => {
+        if (docSnap.exists()) {
+            const loaded = docSnap.data();
+            // Retrocompatibilità oggetti
+            if (loaded.inventory && typeof loaded.inventory[0] === 'string') {
+                loaded.inventory = loaded.inventory.map((i) => ({ name: i, qty: 1, type: "Oggetto" }));
+            }
+            // Retrocompatibilità privilegi
+            if (loaded.feats && typeof loaded.feats[0] === 'string') {
+                loaded.feats = loaded.feats.map((f) => ({ name: f, type: "Altro", desc: "" }));
+            }
+            charData = { ...charData, ...loaded };
+        }
+        else {
+            saveCharData();
+        }
+    }).catch((err) => console.warn(err)).finally(() => {
+        renderSheet();
+        const loader = document.getElementById('sheet-loading');
+        if (loader) {
+            loader.style.opacity = "0";
+            setTimeout(() => { loader.style.display = "none"; }, 500);
+        }
+    });
+    // --- BIND DEGLI INPUT BASE ---
+    const bindInput = (id, updateFn) => {
+        document.getElementById(id)?.addEventListener('change', (e) => {
+            updateFn(e.target.value);
+            renderSheet();
+            saveCharData();
+        });
+    };
+    bindInput('char-name', v => charData.name = v);
+    bindInput('char-class', v => charData.classLevel = v);
+    bindInput('char-prof-bonus', v => charData.profBonus = parseInt(v) || 0);
+    bindInput('char-ac', v => charData.ac = parseInt(v) || 0);
+    bindInput('char-hp-current', v => charData.hpCurrent = parseInt(v) || 0);
+    bindInput('char-hp-temp', v => charData.hpTemp = parseInt(v) || 0);
+    bindInput('char-hd-total', v => charData.hitDice.total = v);
+    bindInput('char-hd-used', v => charData.hitDice.used = parseInt(v) || 0);
+    // Bind livello e talento Robusto
+    bindInput('char-level', v => charData.level = parseInt(v) || 1);
+    document.getElementById('char-tough')?.addEventListener('change', (e) => {
+        charData.toughFeat = e.target.checked;
+        renderSheet();
+        saveCharData();
+    });
+    ['cp', 'sp', 'ep', 'gp', 'pp'].forEach(coin => bindInput(`coin-${coin}`, v => charData.currency[coin] = parseInt(v) || 0));
+    ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(stat => bindInput(`score-${stat}`, v => charData.stats[stat] = parseInt(v) || 10));
+    [0, 1, 2].forEach(i => {
+        document.getElementById(`ds-s-${i}`)?.addEventListener('change', (e) => {
+            charData.deathSaves.successes[i] = e.target.checked;
+            saveCharData();
+        });
+        document.getElementById(`ds-f-${i}`)?.addEventListener('change', (e) => {
+            charData.deathSaves.failures[i] = e.target.checked;
+            saveCharData();
+        });
+    });
+    // === GESTIONE MODALI (UI) ===
+    const overlay = document.getElementById('modal-overlay');
+    const modalItem = document.getElementById('modal-item');
+    const modalAtk = document.getElementById('modal-attack');
+    const modalFeat = document.getElementById('modal-feat');
+    const openModal = (modal) => {
+        if (!overlay || !modal)
+            return;
+        overlay.style.display = 'flex';
+        modalItem.style.display = 'none';
+        modalAtk.style.display = 'none';
+        modalFeat.style.display = 'none';
+        modal.style.display = 'flex';
+    };
+    const closeModal = () => { if (overlay)
+        overlay.style.display = 'none'; };
+    document.getElementById('btn-cancel-item')?.addEventListener('click', closeModal);
+    document.getElementById('btn-cancel-atk')?.addEventListener('click', closeModal);
+    document.getElementById('btn-cancel-feat')?.addEventListener('click', closeModal);
+    overlay?.addEventListener('click', (e) => { if (e.target === overlay)
+        closeModal(); });
+    // Modale Inventario
+    document.getElementById('add-item-btn')?.addEventListener('click', () => openModal(modalItem));
+    document.getElementById('btn-save-item')?.addEventListener('click', () => {
+        const name = document.getElementById('modal-item-name').value.trim();
+        const qty = parseInt(document.getElementById('modal-item-qty').value) || 1;
+        const type = document.getElementById('modal-item-type').value;
+        if (name) {
+            if (!charData.inventory)
+                charData.inventory = [];
+            charData.inventory.push({ name, qty, type });
+            renderSheet();
+            saveCharData();
+        }
+        document.getElementById('modal-item-name').value = "";
+        closeModal();
+    });
+    // Modale Attacchi
+    document.getElementById('add-attack-btn')?.addEventListener('click', () => openModal(modalAtk));
+    document.getElementById('btn-save-atk')?.addEventListener('click', () => {
+        const name = document.getElementById('modal-atk-name').value.trim();
+        const stat = document.getElementById('modal-atk-stat').value;
+        const magicMod = parseInt(document.getElementById('modal-atk-magic').value) || 0;
+        const damage = document.getElementById('modal-atk-damage').value.trim();
+        if (name) {
+            if (!charData.attacks)
+                charData.attacks = [];
+            charData.attacks.push({ name, stat, magicMod, damage });
+            renderSheet();
+            saveCharData();
+        }
+        document.getElementById('modal-atk-name').value = "";
+        document.getElementById('modal-atk-damage').value = "";
+        closeModal();
+    });
+    // Modale Talenti
+    document.getElementById('add-feat-btn')?.addEventListener('click', () => openModal(modalFeat));
+    document.getElementById('btn-save-feat')?.addEventListener('click', () => {
+        const name = document.getElementById('modal-feat-name').value.trim();
+        const type = document.getElementById('modal-feat-type').value;
+        const desc = document.getElementById('modal-feat-desc').value.trim();
+        if (name) {
+            if (!charData.feats)
+                charData.feats = [];
+            charData.feats.push({ name, type, desc });
+            renderSheet();
+            saveCharData();
+        }
+        document.getElementById('modal-feat-name').value = "";
+        document.getElementById('modal-feat-desc').value = "";
+        closeModal();
+    });
+});
