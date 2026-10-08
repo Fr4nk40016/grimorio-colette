@@ -167,15 +167,24 @@ window.addEventListener('load', () => {
         stats: { str: 10, dex: 16, con: 14, int: 8, wis: 10, cha: 16 },
         saves: { str: false, dex: true, con: false, int: true, wis: false, cha: false },
         skills: {
-            "Acrobazia": {ability: "dex", prof: true}, "Addestrare Animali": {ability: "wis", prof: false},
-            "Arcano": {ability: "int", prof: false}, "Atletica": {ability: "str", prof: false},
-            "Furtività": {ability: "dex", prof: false}, "Indagare": {ability: "int", prof: false},
-            "Inganno": {ability: "cha", prof: true}, "Intimidire": {ability: "cha", prof: false},
-            "Intuizione": {ability: "wis", prof: false}, "Intrattenere": {ability: "cha", prof: false},
-            "Medicina": {ability: "wis", prof: false}, "Natura": {ability: "int", prof: false},
-            "Percezione": {ability: "wis", prof: false}, "Persuasione": {ability: "cha", prof: true},
-            "Rapidità di mano": {ability: "dex", prof: false}, "Religione": {ability: "int", prof: false},
-            "Sopravvivenza": {ability: "wis", prof: false}, "Storia": {ability: "int", prof: false}
+            "Acrobazia": {ability: "dex", prof: true, expertise: false},
+            "Addestrare Animali": {ability: "wis", prof: false, expertise: false},
+            "Arcano": {ability: "int", prof: false, expertise: false},
+            "Atletica": {ability: "str", prof: false, expertise: false},
+            "Furtività": {ability: "dex", prof: true, expertise: true}, // Es. Colette con Maestria in Furtività
+            "Indagare": {ability: "int", prof: false, expertise: false},
+            "Inganno": {ability: "cha", prof: true, expertise: false},
+            "Intimidire": {ability: "cha", prof: false, expertise: false},
+            "Intuizione": {ability: "wis", prof: false, expertise: false},
+            "Intrattenere": {ability: "cha", prof: false, expertise: false},
+            "Medicina": {ability: "wis", prof: false, expertise: false},
+            "Natura": {ability: "int", prof: false, expertise: false},
+            "Percezione": {ability: "wis", prof: false, expertise: false},
+            "Persuasione": {ability: "cha", prof: true, expertise: false},
+            "Rapidità di mano": {ability: "dex", prof: false, expertise: false},
+            "Religione": {ability: "int", prof: false, expertise: false},
+            "Sopravvivenza": {ability: "wis", prof: false, expertise: false},
+            "Storia": {ability: "int", prof: false, expertise: false}
         },
         attacks: [
             { name: "Spada Corta", stat: "dex", magicMod: 0, damage: "1d6+3 taglienti" },
@@ -302,21 +311,74 @@ window.addEventListener('load', () => {
             skillsList.innerHTML = '';
             Object.entries(charData.skills).forEach(([skillName, data]: [string, any]) => {
                 const statMod = getModifier(charData.stats?.[data.ability]);
-                const totalBonus = statMod + (data.prof ? (charData.profBonus ?? 2) : 0);
+                const profBonus = charData.profBonus ?? 2;
+
+                // Calcolo del bonus totale:
+                // Competente = +1x Bonus
+                // Maestria = +2x Bonus
+                let multiplier = 0;
+                if (data.expertise) {
+                    multiplier = 2;
+                } else if (data.prof) {
+                    multiplier = 1;
+                }
+
+                const totalBonus = statMod + (profBonus * multiplier);
+
+                const isProf = !!data.prof;
+                const isExp = !!data.expertise;
+
                 const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.style.alignItems = 'center';
+                li.style.padding = '4px 0';
+
                 li.innerHTML = `
-                    <label style="cursor:pointer; display:flex; gap:10px; align-items:center; ${data.prof ? 'color: var(--text-gold); font-weight: bold;' : ''}">
-                        <input type="checkbox" class="skill-cb" data-skill="${skillName}" ${data.prof ? 'checked' : ''}>
-                        ${skillName} <span style="font-size:0.7rem; color:#666;">(${data.ability.toUpperCase()})</span>
-                    </label>
-                    <span>${formatMod(totalBonus)}</span>
-                `;
+            <div style="display:flex; gap:8px; align-items:center;">
+                <!-- Checkbox Competenza (P) -->
+                <input type="checkbox" class="skill-cb" data-skill="${skillName}" ${isProf ? 'checked' : ''} title="Competenza">
+                
+                <!-- Checkbox Maestria / Expertise (E) -->
+                <input type="checkbox" class="expertise-cb" data-skill="${skillName}" ${isExp ? 'checked' : ''} ${!isProf ? 'disabled' : ''} title="Maestria (Raddoppia Bonus Competenza)">
+                
+                <span style="${isExp ? 'color: var(--text-gold); font-weight: bold; text-decoration: underline;' : isProf ? 'color: var(--text-gold); font-weight: bold;' : ''}">
+                    ${skillName} <span style="font-size:0.7rem; color:#888;">(${data.ability.toUpperCase()})</span>
+                    ${isExp ? '<span style="font-size:0.65rem; background:var(--text-gold); color:#000; border-radius:3px; padding:1px 3px; margin-left:4px; font-weight:bold;">M</span>' : ''}
+                </span>
+            </div>
+            <span style="font-weight:bold; ${isExp || isProf ? 'color:var(--text-gold);' : ''}">${formatMod(totalBonus)}</span>
+        `;
                 skillsList.appendChild(li);
             });
+
+            // Event Listener per Competenza
             document.querySelectorAll('.skill-cb').forEach(cb => {
                 cb.addEventListener('change', (e) => {
-                    charData.skills[(e.target as HTMLInputElement).getAttribute('data-skill')!].prof = (e.target as HTMLInputElement).checked;
-                    renderSheet(); saveCharData();
+                    const target = e.target as HTMLInputElement;
+                    const skillName = target.getAttribute('data-skill')!;
+                    charData.skills[skillName].prof = target.checked;
+                    // Se togli la competenza, si disattiva automaticamente anche la maestria
+                    if (!target.checked) {
+                        charData.skills[skillName].expertise = false;
+                    }
+                    renderSheet();
+                    saveCharData();
+                });
+            });
+
+            // Event Listener per Maestria
+            document.querySelectorAll('.expertise-cb').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const target = e.target as HTMLInputElement;
+                    const skillName = target.getAttribute('data-skill')!;
+                    charData.skills[skillName].expertise = target.checked;
+                    // La maestria richiede necessariamente che ci sia competenza
+                    if (target.checked) {
+                        charData.skills[skillName].prof = true;
+                    }
+                    renderSheet();
+                    saveCharData();
                 });
             });
         }
