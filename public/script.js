@@ -162,7 +162,7 @@ window.addEventListener('load', () => {
             "Addestrare Animali": { ability: "wis", prof: false, expertise: false },
             "Arcano": { ability: "int", prof: false, expertise: false },
             "Atletica": { ability: "str", prof: false, expertise: false },
-            "Furtività": { ability: "dex", prof: true, expertise: true }, // Es. Colette con Maestria in Furtività
+            "Furtività": { ability: "dex", prof: true, expertise: true },
             "Indagare": { ability: "int", prof: false, expertise: false },
             "Inganno": { ability: "cha", prof: true, expertise: false },
             "Intimidire": { ability: "cha", prof: false, expertise: false },
@@ -229,7 +229,6 @@ window.addEventListener('load', () => {
         setInputValue('char-hp-temp', charData.hpTemp ?? 0);
         setInputValue('char-hd-total', charData.hitDice?.total ?? '3d8');
         setInputValue('char-hd-used', charData.hitDice?.used ?? 0);
-        // CALCOLO AUTOMATICO PF SECONDO LE REGOLE DI D&D (Dado Ladro = d8 -> Max 1° liv = 8, Media successivi = 5)
         const lvl = charData.level ?? 3;
         const conMod = getModifier(charData.stats?.con ?? 10);
         let baseHpAtLevel1 = 8;
@@ -242,7 +241,7 @@ window.addEventListener('load', () => {
         if (toughCheckbox)
             toughCheckbox.checked = !!charData.toughFeat;
         setInnerText('char-hp-max-display', totalMaxHp.toString());
-        charData.hpMax = totalMaxHp; // Sincronizza nel database
+        charData.hpMax = totalMaxHp;
         setInputValue('coin-cp', charData.currency?.cp ?? 0);
         setInputValue('coin-sp', charData.currency?.sp ?? 0);
         setInputValue('coin-ep', charData.currency?.ep ?? 0);
@@ -264,6 +263,7 @@ window.addEventListener('load', () => {
             setInputValue(`score-${stat}`, score);
             setInnerText(`mod-${stat}`, formatMod(getModifier(score)));
         });
+        // --- RENDER TIRI SALVEZZA ---
         const savesList = document.getElementById('saves-list');
         if (savesList && charData.saves) {
             savesList.innerHTML = '';
@@ -283,21 +283,20 @@ window.addEventListener('load', () => {
             });
             document.querySelectorAll('.save-cb').forEach(cb => {
                 cb.addEventListener('change', (e) => {
-                    charData.saves[e.target.getAttribute('data-stat')] = e.target.checked;
+                    const stat = e.target.getAttribute('data-stat');
+                    charData.saves[stat] = e.target.checked;
                     renderSheet();
                     saveCharData();
                 });
             });
         }
+        // --- RENDER ABILITÀ CORRETTO ---
         const skillsList = document.getElementById('skills-list');
         if (skillsList && charData.skills) {
             skillsList.innerHTML = '';
             Object.entries(charData.skills).forEach(([skillName, data]) => {
                 const statMod = getModifier(charData.stats?.[data.ability]);
                 const profBonus = charData.profBonus ?? 2;
-                // Calcolo del bonus totale:
-                // Competente = +1x Bonus
-                // Maestria = +2x Bonus
                 let multiplier = 0;
                 if (data.expertise) {
                     multiplier = 2;
@@ -315,12 +314,8 @@ window.addEventListener('load', () => {
                 li.style.padding = '4px 0';
                 li.innerHTML = `
             <div style="display:flex; gap:8px; align-items:center;">
-                <!-- Checkbox Competenza (P) -->
                 <input type="checkbox" class="skill-cb" data-skill="${skillName}" ${isProf ? 'checked' : ''} title="Competenza">
-                
-                <!-- Checkbox Maestria / Expertise (E) -->
-                <input type="checkbox" class="expertise-cb" data-skill="${skillName}" ${isExp ? 'checked' : ''} ${!isProf ? 'disabled' : ''} title="Maestria (Raddoppia Bonus Competenza)">
-                
+                <input type="checkbox" class="expertise-cb" data-skill="${skillName}" ${isExp ? 'checked' : ''} ${!isProf ? 'disabled' : ''} title="Maestria">
                 <span style="${isExp ? 'color: var(--text-gold); font-weight: bold; text-decoration: underline;' : isProf ? 'color: var(--text-gold); font-weight: bold;' : ''}">
                     ${skillName} <span style="font-size:0.7rem; color:#888;">(${data.ability.toUpperCase()})</span>
                     ${isExp ? '<span style="font-size:0.65rem; background:var(--text-gold); color:#000; border-radius:3px; padding:1px 3px; margin-left:4px; font-weight:bold;">M</span>' : ''}
@@ -330,35 +325,36 @@ window.addEventListener('load', () => {
         `;
                 skillsList.appendChild(li);
             });
-            // Event Listener per Competenza
+            // Gestione del cambio per la Competenza
             document.querySelectorAll('.skill-cb').forEach(cb => {
                 cb.addEventListener('change', (e) => {
                     const target = e.target;
                     const skillName = target.getAttribute('data-skill');
-                    charData.skills[skillName].prof = target.checked;
-                    // Se togli la competenza, si disattiva automaticamente anche la maestria
-                    if (!target.checked) {
-                        charData.skills[skillName].expertise = false;
+                    if (charData.skills[skillName]) {
+                        charData.skills[skillName].prof = target.checked;
+                        if (!target.checked)
+                            charData.skills[skillName].expertise = false;
+                        renderSheet();
+                        saveCharData();
                     }
-                    renderSheet();
-                    saveCharData();
                 });
             });
-            // Event Listener per Maestria
+            // Gestione del cambio per la Maestria (Expertise)
             document.querySelectorAll('.expertise-cb').forEach(cb => {
                 cb.addEventListener('change', (e) => {
                     const target = e.target;
                     const skillName = target.getAttribute('data-skill');
-                    charData.skills[skillName].expertise = target.checked;
-                    // La maestria richiede necessariamente che ci sia competenza
-                    if (target.checked) {
-                        charData.skills[skillName].prof = true;
+                    if (charData.skills[skillName]) {
+                        charData.skills[skillName].expertise = target.checked;
+                        if (target.checked)
+                            charData.skills[skillName].prof = true;
+                        renderSheet();
+                        saveCharData();
                     }
-                    renderSheet();
-                    saveCharData();
                 });
             });
         }
+        // Render Attacchi
         const attacksList = document.getElementById('attacks-list');
         if (attacksList && charData.attacks) {
             attacksList.innerHTML = '';
@@ -416,28 +412,49 @@ window.addEventListener('load', () => {
                 });
             });
         }
-        // Render Talenti Avanzato
-        const featsUl = document.getElementById('feats-list');
-        if (featsUl && charData.feats) {
-            featsUl.innerHTML = '';
+        // Render Talenti & Privilegi Raggruppati
+        const featsContainer = document.getElementById('feats-container');
+        if (featsContainer && charData.feats) {
+            featsContainer.innerHTML = '';
+            const grouped = {};
             charData.feats.forEach((feat, index) => {
-                const li = document.createElement('li');
-                li.style.flexDirection = 'column';
-                li.style.alignItems = 'stretch';
-                li.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span class="item-badge">${feat.type || 'Altro'}</span>
-                            <span style="font-weight:bold; color:var(--text-gold);">${feat.name}</span>
+                const category = feat.type || 'Altro';
+                if (!grouped[category])
+                    grouped[category] = [];
+                grouped[category].push({ feat, originalIndex: index });
+            });
+            Object.entries(grouped).forEach(([category, items]) => {
+                const catGroup = document.createElement('div');
+                catGroup.style.marginBottom = '15px';
+                const catHeader = document.createElement('div');
+                catHeader.className = 'category-title';
+                catHeader.innerText = category;
+                catGroup.appendChild(catHeader);
+                items.forEach(({ feat, originalIndex }) => {
+                    const featBox = document.createElement('div');
+                    featBox.className = 'feat-item-collapsible';
+                    featBox.innerHTML = `
+                        <div class="feat-header">
+                            <span style="color: #fff;">${feat.name}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button class="icon-btn delete-feat-btn" data-index="${originalIndex}">❌</button>
+                                <span class="feat-arrow">▼</span>
+                            </div>
                         </div>
-                        <button class="icon-btn delete-feat-btn" data-index="${index}">❌</button>
-                    </div>
-                    ${feat.desc ? `<div class="feat-desc">${feat.desc}</div>` : ''}
-                `;
-                featsUl.appendChild(li);
+                        ${feat.desc ? `<div class="feat-details">${feat.desc}</div>` : ''}
+                    `;
+                    featBox.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('delete-feat-btn'))
+                            return;
+                        featBox.classList.toggle('open');
+                    });
+                    catGroup.appendChild(featBox);
+                });
+                featsContainer.appendChild(catGroup);
             });
             document.querySelectorAll('.delete-feat-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     charData.feats.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1);
                     renderSheet();
                     saveCharData();
@@ -449,11 +466,9 @@ window.addEventListener('load', () => {
     getDoc(charDocRef).then((docSnap) => {
         if (docSnap.exists()) {
             const loaded = docSnap.data();
-            // Retrocompatibilità oggetti
             if (loaded.inventory && typeof loaded.inventory[0] === 'string') {
                 loaded.inventory = loaded.inventory.map((i) => ({ name: i, qty: 1, type: "Oggetto" }));
             }
-            // Retrocompatibilità privilegi
             if (loaded.feats && typeof loaded.feats[0] === 'string') {
                 loaded.feats = loaded.feats.map((f) => ({ name: f, type: "Altro", desc: "" }));
             }
@@ -486,7 +501,6 @@ window.addEventListener('load', () => {
     bindInput('char-hp-temp', v => charData.hpTemp = parseInt(v) || 0);
     bindInput('char-hd-total', v => charData.hitDice.total = v);
     bindInput('char-hd-used', v => charData.hitDice.used = parseInt(v) || 0);
-    // Bind livello e talento Robusto
     bindInput('char-level', v => charData.level = parseInt(v) || 1);
     document.getElementById('char-tough')?.addEventListener('change', (e) => {
         charData.toughFeat = e.target.checked;

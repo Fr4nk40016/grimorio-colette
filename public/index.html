@@ -5,26 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Il Grimorio di Colette</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap"
-          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
     <!-- INIZIALIZZAZIONE FIREBASE DA CDN -->
     <script type="module">
         import {initializeApp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import {
-            getFirestore,
-            collection,
-            addDoc,
-            onSnapshot,
-            doc,
-            updateDoc,
-            deleteDoc,
-            arrayUnion,
-            increment,
-            query,
-            orderBy,
-            getDoc,
-            setDoc
+            getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -41,20 +28,7 @@
         const db = getFirestore(app);
 
         window.db = db;
-        window.fb = {
-            collection,
-            addDoc,
-            onSnapshot,
-            doc,
-            updateDoc,
-            deleteDoc,
-            arrayUnion,
-            increment,
-            query,
-            orderBy,
-            getDoc,
-            setDoc
-        };
+        window.fb = { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc };
     </script>
 </head>
 <body>
@@ -87,7 +61,7 @@
             <header class="section-header">
                 <p class="tag">IL PERSONAGGIO / SCHEDA PUBBLICA</p>
                 <h1>Nicolette Aurelia Valen (Colette)</h1>
-                <h3 class="golden-text">La lama che protegge Vogler</h3>
+                <h3 class="golden-text">"La bellezza non è nel combattere, ma nel modo in cui si sceglie di farlo"</h3>
             </header>
 
             <div class="hero-container">
@@ -96,16 +70,18 @@
                 </div>
                 <div class="card bio-card">
                     <h3 class="card-title">Chi è Colette</h3>
-                    <p>Nata nella piccola nobiltà dell'Hinterlund, nei dintorni a Vogler è figlia della sindaca Raven
-                        Uth Vogler, Colette ha trovato nella scherma il proprio cammino. Elegante, precisa e agile,
-                        insegna ai giovani e sogna un'accademia del duello fondata su disciplina, rispetto e
-                        controllo.</p>
+                    <p>Nicolette Aurelia Valen, conosciuta da tutti semplicemente come Colette, è una giovane nobildonna di circa venticinque anni. Elegante nei modi e nel portamento, porta con sé una naturale raffinatezza che non le impedisce però di muoversi con la sicurezza e l'agilità di chi ha passato gran parte della propria vita con una spada in mano.<br>
+
+                        Solare e pacata, Colette tende ad affrontare ciò che la circonda con curiosità e sangue freddo. È una persona disciplinata e determinata, particolarmente attenta al rispetto e alla parola data, ma dietro la sua compostezza si nasconde un carattere orgoglioso e un forte desiderio di migliorarsi.<br>
+
+                        La scherma è molto più di una semplice abilità per lei: è una disciplina attraverso cui esprime se stessa. Eleganza, precisione e controllo sono i principi che guidano il suo stile, anche se non disdegna astuzia e imprevedibilità quando la situazione lo richiede.<br>
+
+                        Armata della sua spada corta e accompagnata da un'innata curiosità per il mondo al di fuori della propria vita nobiliare, Colette affronta il viaggio davanti a sé con un sorriso e la convinzione che, per quanto difficile possa essere il cammino, ci sia sempre qualcosa di nuovo da imparare.</p>
                     <div class="quick-stats">
                         <div><strong>Origini:</strong> Piccola nobiltà (Hinterlund)</div>
                         <div><strong>Allineamento:</strong> Legale Buono</div>
                         <div><strong>Classe:</strong> Ladro Lv. 3</div>
                         <div><strong>Persone importanti per lei:</strong> Ispin Greenshield e Gareth Veyr</div>
-
                     </div>
                 </div>
             </div>
@@ -126,17 +102,14 @@
                     <h3 class="card-title">Carattere</h3>
                     <p><strong>Tratti Positivi:</strong> Solare, Curiosa, Pacata, Composta.</p>
                     <p><strong>Limiti:</strong> Perfezionista, Orgogliosa. Fa fatica ad ammettere i fallimenti.</p>
-                    <p><strong>Timori:</strong> Draghi, la guerra e la minaccia a Vogler. Teme di perdere il controllo.
-                    </p>
+                    <p><strong>Timori:</strong> Draghi, la guerra e la minaccia a Vogler. Teme di perdere il controllo.</p>
                 </div>
 
                 <div class="card col-span-2 highlight-card">
                     <h3 class="card-title">Il Grande Sogno</h3>
-                    <p>Fondare un'accademia del duello a Vogler: un luogo dove disciplina, rispetto, controllo e fiducia
-                        in se stessi diventino eredità per le generazioni future.</p>
+                    <p>Fondare un'accademia del duello a Vogler: un luogo dove disciplina, rispetto, controllo e fiducia in se stessi diventino eredità per le generazioni future.</p>
                     <hr class="divider">
-                    <p><strong>Linea che non attraversa:</strong> Non tradirà mai chi si affida a lei. Non sacrificherà
-                        innocenti per nessun obiettivo, nemmeno per il suo sogno.</p>
+                    <p><strong>Linea che non attraversa:</strong> Non tradirà mai chi si affida a lei. Non sacrificherà innocenti per nessun obiettivo, nemmeno per il suo sogno.</p>
                 </div>
             </div>
         </section>
@@ -165,35 +138,22 @@
             <div class="profile-grid">
                 <div class="card col-span-2">
                     <h3 class="card-title">L'incontro con Ispin Greenshield</h3>
-                    <p>Ispin frequentava la famiglia di Colette da diversi anni quando si accorse del suo talento. La
-                        bambina osservava gli allenamenti con un interesse quasi ossessivo e cercava spesso di imitare i
-                        movimenti. Fu Ispin a convincere la famiglia a farle iniziare delle vere lezioni di scherma.</p>
+                    <p>Ispin frequentava la famiglia di Colette da diversi anni quando si accorse del suo talento. La bambina osservava gli allenamenti con un interesse quasi ossessivo e cercava spesso di imitare i movimenti. Fu Ispin a convincere la famiglia a farle iniziare delle vere lezioni di scherma.</p>
                 </div>
                 <div class="card col-span-2">
                     <h3 class="card-title">Gareth Veyr e la loro amicizia</h3>
-                    <p>Quando Colette aveva circa sei anni, sua madre commissionò un vestito alla sarta del paese. Il
-                        giorno della consegna, la sarta si presentò insieme a suo figlio, Gareth Veyr. <br>
-                        In quel momento, a casa di Colette c'era anche Ispin, che stava seguendo l'addestramento della
-                        bambina. Il ragazzino, che a sua volta era un allievo di Ispin, corse subito a salutare il
-                        maestro. Fu così che Colette e Gareth si conobbero: da quel giorno in poi continuarono ad
-                        allenarsi e a migliorare insieme, fino a quando Gareth, compiuti quattordici anni, dovette
-                        partire per il suo addestramento ufficiale.<br>
+                    <p>Quando Colette aveva circa sei anni, sua madre commissionò un vestito alla sarta del paese. Il giorno della consegna, la sarta si presentò insieme a suo figlio, Gareth Veyr. <br>
+                        In quel momento, a casa di Colette c'era anche Ispin, che stava seguendo l'addestramento della bambina. Il ragazzino, che a sua volta era un allievo di Ispin, corse subito a salutare il maestro. Fu così che Colette e Gareth si conobbero: da quel giorno in poi continuarono ad allenarsi e a migliorare insieme, fino a quando Gareth, compiuti quattordici anni, dovette partire per il suo addestramento ufficiale.<br>
 
-                        Nonostante siano rimasti diversi anni senza vedersi, ogni volta che Gareth fa ritorno a Vogler
-                        per riposarsi tra una missione e l'altra, i due si ritrovano e riprendono a vivere la loro
-                        amicizia proprio come quando erano bambini. </p>
+                        Nonostante siano rimasti diversi anni senza vedersi, ogni volta che Gareth fa ritorno a Vogler per riposarsi tra una missione e l'altra, i due si ritrovano e riprendono a vivere la loro amicizia proprio come quando erano bambini. </p>
                 </div>
                 <div class="card">
                     <h3 class="card-title">La Prima Prova Pericolosa</h3>
-                    <p>Durante un viaggio, Colette e Ispin furono aggrediti da dei predoni. Capì che in uno scontro
-                        reale non si combatte sempre secondo le regole di una sala d'armi. Imparò a improvvisare, ad
-                        applicare la sua agilità in modo opportunistico e ad usare la spada corta ad una mano.</p>
+                    <p>Durante un viaggio, Colette e Ispin furono aggrediti da dei predoni. Capì che in uno scontro reale non si combatte sempre secondo le regole di una sala d'armi. Imparò a improvvisare, ad applicare la sua agilità in modo opportunistico e ad usare la spada corta ad una mano.</p>
                 </div>
                 <div class="card">
                     <h3 class="card-title">Insegnare ai Giovani</h3>
-                    <p>Con il tempo iniziò ad aiutare nell'allenamento di alcuni ragazzi di Vogler. Lì scoprì che le
-                        piaceva insegnare e trasmettere il controllo di sé e la disciplina, una vocazione che ha
-                        trasformato nel suo grande sogno.</p>
+                    <p>Con il tempo iniziò ad aiutare nell'allenamento di alcuni ragazzi di Vogler. Lì scoprì che le piaceva insegnare e trasmettere il controllo di sé e la disciplina, una vocazione che ha trasformato nel suo grande sogno.</p>
                 </div>
             </div>
         </section>
@@ -213,29 +173,10 @@
             </div>
 
             <div class="profile-grid" style="margin-top: 20px;">
-                <div class="card">
-                    <h3 class="card-title">Riflessioni Private & Paure</h3>
-                    <p><strong>La Paura Segreta:</strong> Appare composta e sicura, ma teme in segreto di non essere
-                        all'altezza delle aspettative di chi ama, soprattutto di Ispin.</p>
-                    <p><strong>Il Controllo come Ancora:</strong> La disciplina è il suo modo per tenere insieme il
-                        mondo. Perdere il controllo la spaventa più della morte.</p>
-                </div>
-                <div class="card">
-                    <h3 class="card-title">Dati Tecnici Riservati</h3>
-                    <p><strong>Classe:</strong> Ladro Lv. 3 (Sottoclasse: Swashbuckler / Spadaccino)</p>
-                    <p><strong>Privilegi di Classe:</strong> Fancy Footwork, Rakish Audacity, Attacco Furtivo (2d6)</p>
-                    <p><strong>Talenti:</strong> Slasher, Duellante</p>
-                </div>
                 <div class="card col-span-2">
-                    <h3 class="card-title">Scheda Personaggio PDF Completa</h3>
-                    <div class="pdf-container">
-                        <iframe src="scheda-colette.pdf" width="100%" height="600px"
-                                style="border: none; border-radius: 6px;">
-                            Il tuo browser non supporta la visualizzazione diretta dei PDF.
-                            <a href="scheda-colette.pdf" target="_blank" style="color: var(--text-gold);">Clicca qui per
-                                scaricare la scheda PDF.</a>
-                        </iframe>
-                    </div>
+                    <h3 class="card-title">Riflessioni Private & Paure</h3>
+                    <p><strong>La Paura Segreta:</strong> Appare composta e sicura, ma teme in segreto di non essere all'altezza delle aspettative di chi ama, soprattutto di Ispin.</p>
+                    <p><strong>Il Controllo come Ancora:</strong> La disciplina è il suo modo per tenere insieme il mondo. Perdere il controllo la spaventa più della morte.</p>
                 </div>
             </div>
         </section>
@@ -250,15 +191,10 @@
                     Colette - La lama che protegge Vogler
                     <span id="save-status">Salvato ✓</span>
                 </h1>
-                <div class="sheet-header-info"
-                     style="display: flex; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                    <div><label>Vero Nome:</label> <input type="text" id="char-name" class="sheet-input-text"
-                                                          style="width: 150px;"></div>
-                    <div><label>Classe e Livello:</label> <input type="text" id="char-class" class="sheet-input-text"
-                                                                 style="width: 200px;"></div>
-                    <div><label>Bonus Competenza:</label> <input type="number" id="char-prof-bonus" class="sheet-input"
-                                                                 style="width: 40px; font-weight: bold; color: var(--text-gold);">
-                    </div>
+                <div class="sheet-header-info" style="display: flex; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                    <div><label>Vero Nome:</label> <input type="text" id="char-name" class="sheet-input-text" style="width: 150px;"></div>
+                    <div><label>Classe e Livello:</label> <input type="text" id="char-class" class="sheet-input-text" style="width: 200px;"></div>
+                    <div><label>Bonus Competenza:</label> <input type="number" id="char-prof-bonus" class="sheet-input" style="width: 40px; font-weight: bold; color: var(--text-gold);"></div>
                 </div>
             </header>
 
@@ -309,8 +245,7 @@
                     <div class="combat-stats">
                         <div class="combat-box">
                             <div class="attr-name">C.A.</div>
-                            <input type="number" id="char-ac" class="sheet-input"
-                                   style="font-size: 1.5rem; width: 60px;">
+                            <input type="number" id="char-ac" class="sheet-input" style="font-size: 1.5rem; width: 60px;">
                         </div>
                         <div class="combat-box">
                             <div class="attr-name">Iniziativa</div>
@@ -322,32 +257,26 @@
                         <div class="hp-row">
                             <span><strong>PF Attuali / Max</strong></span>
                             <div>
-                                <input type="number" id="char-hp-current" class="sheet-input"
-                                       style="width: 50px; font-weight:bold;"> /
-                                <span id="char-hp-max-display"
-                                      style="font-size: 1.2rem; font-weight: bold; color: var(--text-gold); display: inline-block; width: 40px; text-align: center;">24</span>
+                                <input type="number" id="char-hp-current" class="sheet-input" style="width: 50px; font-weight:bold;"> /
+                                <span id="char-hp-max-display" style="font-size: 1.2rem; font-weight: bold; color: var(--text-gold); display: inline-block; width: 40px; text-align: center;">24</span>
                             </div>
                         </div>
 
                         <!-- CONTROLLO AUTOMATICO REGOLE D&D -->
                         <div style="font-size: 0.8rem; color: #888; background: rgba(0,0,0,0.15); padding: 8px; border-radius: 6px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
-                            <span>Livello: <input type="number" id="char-level" class="sheet-input"
-                                                  style="width:35px; text-align:center;"></span>
+                            <span>Livello: <input type="number" id="char-level" class="sheet-input" style="width:35px; text-align:center;"></span>
                             <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="char-tough" style="accent-color: var(--text-gold);"> Talento
-                                Robusto
+                                <input type="checkbox" id="char-tough" style="accent-color: var(--text-gold);"> Talento Robusto
                             </label>
                         </div>
 
                         <div class="hp-row" style="margin-top: 10px;">
                             <span>PF Temporanei</span>
-                            <input type="number" id="char-hp-temp" class="sheet-input"
-                                   style="width: 50px; color:#50c878;">
+                            <input type="number" id="char-hp-temp" class="sheet-input" style="width: 50px; color:#50c878;">
                         </div>
                         <hr class="divider">
                         <div class="hp-row">
-                            <span>Dadi Vita (<input type="text" id="char-hd-total" class="sheet-input-text"
-                                                    style="width:40px;">) Spesi:</span>
+                            <span>Dadi Vita (<input type="text" id="char-hd-total" class="sheet-input-text" style="width:40px;">) Spesi:</span>
                             <input type="number" id="char-hd-used" class="sheet-input" style="width: 50px;">
                         </div>
                         <hr class="divider">
@@ -356,15 +285,13 @@
                             <div class="ds-row">
                                 <span>Successi</span>
                                 <div class="ds-boxes">
-                                    <input type="checkbox" id="ds-s-0"><input type="checkbox" id="ds-s-1"><input
-                                        type="checkbox" id="ds-s-2">
+                                    <input type="checkbox" id="ds-s-0"><input type="checkbox" id="ds-s-1"><input type="checkbox" id="ds-s-2">
                                 </div>
                             </div>
                             <div class="ds-row">
                                 <span>Fallimenti</span>
                                 <div class="ds-boxes">
-                                    <input type="checkbox" id="ds-f-0"><input type="checkbox" id="ds-f-1"><input
-                                        type="checkbox" id="ds-f-2">
+                                    <input type="checkbox" id="ds-f-0"><input type="checkbox" id="ds-f-1"><input type="checkbox" id="ds-f-2">
                                 </div>
                             </div>
                         </div>
@@ -382,16 +309,11 @@
                 <div class="card">
                     <h3 class="card-title">Ricchezze</h3>
                     <div class="currency-row">
-                        <div class="coin-box"><label>MR</label><input type="number" id="coin-cp" class="sheet-input">
-                        </div>
-                        <div class="coin-box"><label>MA</label><input type="number" id="coin-sp" class="sheet-input">
-                        </div>
-                        <div class="coin-box"><label>ME</label><input type="number" id="coin-ep" class="sheet-input">
-                        </div>
-                        <div class="coin-box"><label>MO</label><input type="number" id="coin-gp" class="sheet-input">
-                        </div>
-                        <div class="coin-box"><label>MP</label><input type="number" id="coin-pp" class="sheet-input">
-                        </div>
+                        <div class="coin-box"><label>MR</label><input type="number" id="coin-cp" class="sheet-input"></div>
+                        <div class="coin-box"><label>MA</label><input type="number" id="coin-sp" class="sheet-input"></div>
+                        <div class="coin-box"><label>ME</label><input type="number" id="coin-ep" class="sheet-input"></div>
+                        <div class="coin-box"><label>MO</label><input type="number" id="coin-gp" class="sheet-input"></div>
+                        <div class="coin-box"><label>MP</label><input type="number" id="coin-pp" class="sheet-input"></div>
                     </div>
 
                     <h3 class="card-title" style="display: flex; justify-content: space-between;">Inventario
@@ -402,7 +324,9 @@
                     <h3 class="card-title" style="display: flex; justify-content: space-between;">Talenti & Privilegi
                         <button id="add-feat-btn" class="icon-btn">➕</button>
                     </h3>
-                    <ul id="feats-list" class="dynamic-list"></ul>
+                    <div id="feats-container">
+                        <ul id="feats-list" class="dynamic-list"></ul>
+                    </div>
                 </div>
             </div>
 

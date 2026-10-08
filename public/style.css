@@ -723,11 +723,11 @@ body.light-theme .modal-content textarea {
         padding: 25px;
     }
     .sheet-grid {
-        grid-template-columns: 1fr; /* Colonna singola per la scheda */
+        grid-template-columns: 1fr;
         gap: 20px;
     }
     .attributes-row {
-        grid-template-columns: repeat(3, 1fr); /* 3 box per riga le caratteristiche */
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -738,7 +738,7 @@ body.light-theme .modal-content textarea {
         overflow: auto;
     }
     .app-container {
-        flex-direction: column; /* App impilata verticalmente */
+        flex-direction: column;
         height: auto;
         min-height: 100vh;
     }
@@ -770,19 +770,70 @@ body.light-theme .modal-content textarea {
         overflow-y: visible;
     }
     .hero-container {
-        grid-template-columns: 1fr; /* Ritratto sopra, bio sotto */
+        grid-template-columns: 1fr;
     }
     .profile-grid {
-        grid-template-columns: 1fr; /* Griglie a colonna singola */
+        grid-template-columns: 1fr;
     }
     .col-span-2 {
         grid-column: span 1;
     }
     .attributes-row {
-        grid-template-columns: repeat(2, 1fr); /* 2 caratteristiche per riga sui telefoni piccoli */
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
     .section-header h1 {
         font-size: 1.8rem;
     }
+}
+
+/* --- ACCORDION PER PRIVILEGI/TALENTI --- */
+.feat-item-collapsible {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.feat-item-collapsible:hover {
+    background-color: rgba(197, 160, 89, 0.05);
+    border-color: var(--text-gold);
+}
+
+.feat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+.feat-arrow {
+    font-size: 0.8rem;
+    color: var(--text-gold);
+    transition: transform 0.3s ease;
+}
+
+.feat-details {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    font-size: 0.85rem;
+    color: #aaa;
+    line-height: 1.4;
+}
+
+.feat-item-collapsible.open .feat-details {
+    max-height: 300px;
+    opacity: 1;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.feat-item-collapsible.open .feat-arrow {
+    transform: rotate(180deg);
 }
