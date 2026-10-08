@@ -772,9 +772,6 @@ body.light-theme .modal-content textarea {
     .hero-container {
         grid-template-columns: 1fr;
     }
-    .profile-grid {
-        grid-template-columns: 1fr;
-    }
     .col-span-2 {
         grid-column: span 1;
     }
