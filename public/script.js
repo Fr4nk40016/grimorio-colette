@@ -1,4 +1,40 @@
 "use strict";
+// --- FUNZIONE DI COMPRESSIONE E CONVERSIONE IN BASE64 ---
+const compressImageToBase64 = async (file, maxWidth = 800, quality = 0.6) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                // Ridimensiona mantenendo le proporzioni
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Impossibile ottenere il contesto 2D del canvas.'));
+                    return;
+                }
+                // Disegna l'immagine sul canvas
+                ctx.drawImage(img, 0, 0, width, height);
+                // Converti il canvas direttamente in una stringa Base64
+                // Usiamo jpeg con qualità 0.6 per ridurre al massimo il peso della stringa (Firestore ha un limite di 1MB per documento)
+                const base64String = canvas.toDataURL('image/jpeg', quality);
+                resolve(base64String);
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
 // --- GESTIONE TEMA (CHIARO/SCURO) ---
 const themeToggle = document.getElementById('theme-toggle');
 const currentTheme = localStorage.getItem('colette-theme') || 'dark';
@@ -49,10 +85,11 @@ navBtns.forEach(btn => {
         document.getElementById(targetId)?.classList.add('active');
     });
 });
-// --- INTERAZIONI CON FIRESTORE E STORAGE ---
+// --- INTERAZIONI CON FIRESTORE ---
 window.addEventListener('load', () => {
     const db = window.db;
-    const { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc, storage, ref, uploadBytes, getDownloadURL } = window.fb || {};
+    // Rimuoviamo i riferimenti a 'storage' dato che usiamo solo Firestore
+    const { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc } = window.fb || {};
     if (!db)
         return;
     // === GESTIONE DIARIO ===
@@ -71,29 +108,47 @@ window.addEventListener('load', () => {
         publishBtn.disabled = true;
         try {
             let imageUrl = null;
-            // Se l'utente ha selezionato un file, caricalo su Storage
+            // Se l'utente ha selezionato un file, convertilo in Base64
             if (postImageFileInput && postImageFileInput.files && postImageFileInput.files.length > 0) {
                 const file = postImageFileInput.files[0];
+                // Controllo base sul tipo di file
+                if (!file.type.startsWith('image/')) {
+                    alert('Per favore seleziona un file immagine valido (es. JPG, PNG).');
+                    publishBtn.disabled = false;
+                    return;
+                }
                 // Mostra il messaggio di caricamento
-                if (uploadStatus)
+                if (uploadStatus) {
+                    uploadStatus.innerText = "Ottimizzazione immagine in corso...";
                     uploadStatus.style.display = 'block';
-                // Crea un nome univoco per il file usando la data corrente
-                const uniqueFileName = `post_images/${Date.now()}_${file.name}`;
-                // Crea un riferimento (ref) a dove salvare il file nello Storage
-                const storageRef = ref(storage, uniqueFileName);
-                // Carica il file
-                await uploadBytes(storageRef, file);
-                // Ottieni l'URL pubblico per scaricare/visualizzare l'immagine
-                imageUrl = await getDownloadURL(storageRef);
-                // Nascondi il messaggio di caricamento
+                }
+                // Comprimi l'immagine e ottieni la stringa Base64
+                // Nota: Firestore ha un limite rigido di 1MB (1,048,576 byte) per documento.
+                // La compressione (maxWidth 800, quality 0.6) assicura che l'immagine stia ampiamente sotto questo limite.
+                try {
+                    imageUrl = await compressImageToBase64(file, 800, 0.6);
+                    // Controllo di sicurezza sulle dimensioni della stringa Base64
+                    // Se la stringa supera ~800KB, avvisiamo l'utente
+                    const stringSizeInBytes = new Blob([imageUrl]).size;
+                    if (stringSizeInBytes > 800000) {
+                        console.warn("L'immagine compressa è ancora molto grande per Firestore.");
+                        // Potremmo bloccare il salvataggio qui, ma proviamo comunque a inviarlo
+                        // Firestore darà errore se supera 1MB
+                    }
+                }
+                catch (imgError) {
+                    console.error("Errore durante la conversione dell'immagine:", imgError);
+                    alert("Si è verificato un errore durante l'elaborazione dell'immagine. Il post verrà salvato senza immagine.");
+                }
+                // Nascondi il messaggio
                 if (uploadStatus)
                     uploadStatus.style.display = 'none';
             }
-            // Salva il post su Firestore, includendo l'URL dell'immagine se presente
+            // Salva il post su Firestore. imageUrl ora contiene la lunga stringa Base64
             await addDoc(collection(db, "posts"), {
                 title: title,
                 content: content,
-                imageUrl: imageUrl, // Salviamo l'URL dell'immagine su Firestore
+                imageUrl: imageUrl,
                 createdAt: new Date(),
                 swords: 0,
                 shields: 0,
@@ -106,11 +161,17 @@ window.addEventListener('load', () => {
                 postContentInput.value = "";
             if (postImageFileInput)
                 postImageFileInput.value = "";
-            alert("Post pubblicato!");
+            alert("Post pubblicato con successo!");
         }
         catch (error) {
             console.error("Errore durante la pubblicazione:", error);
-            alert("Errore durante la pubblicazione. Controlla la console per i dettagli. (Hai abilitato Firebase Storage in modalità test?)");
+            // Messaggio di errore specifico se si supera il limite di 1MB
+            if (error instanceof Error && error.message.includes('exceeds the maximum payload size')) {
+                alert("Errore: l'immagine caricata è troppo grande, anche dopo la compressione. Scegli un'immagine più semplice o di dimensioni minori.");
+            }
+            else {
+                alert("Errore durante la pubblicazione. Riprova tra poco.");
+            }
             if (uploadStatus)
                 uploadStatus.style.display = 'none';
         }
@@ -130,9 +191,9 @@ window.addEventListener('load', () => {
             const postId = docSnap.id;
             const article = document.createElement('article');
             article.className = 'card post-card';
-            // Crea il blocco immagine se esiste un URL (caricato precedentemente)
+            // Crea il blocco immagine. src accetta anche le stringhe Base64 ("data:image/jpeg;base64,...")
             const imageHtml = post.imageUrl
-                ? `<div class="post-image-container"><img src="${post.imageUrl}" alt="Immagine di campagna"></div>`
+                ? `<div class="post-image-container"><img src="${post.imageUrl}" alt="Immagine allegata al post"></div>`
                 : '';
             article.innerHTML = `
         <div class="post-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -161,8 +222,6 @@ window.addEventListener('load', () => {
       `;
             journalFeed.appendChild(article);
         });
-        // NOTA: Questa funzione di eliminazione ora cancella solo il post da Firestore,
-        // non cancella l'immagine dallo Storage. Per semplicità lo lasciamo così per ora.
         document.querySelectorAll('.delete-post-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const pId = btn.getAttribute('data-id');
@@ -197,7 +256,6 @@ window.addEventListener('load', () => {
         });
     });
     // === MOTORE SCHEDA PERSONAGGIO ===
-    // ... [Il resto del codice di src/client.ts rimane identico a prima] ...
     const charDocRef = doc(db, "character", "colette-v2");
     let charData = {
         name: "Nicolette Aurelia Valen", classLevel: "Ladro - Livello 3", profBonus: 2, ac: 15,

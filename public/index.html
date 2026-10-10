@@ -13,10 +13,8 @@
         import {
             getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        // NUOVO: Importo le funzioni per lo Storage
-        import {
-            getStorage, ref, uploadBytes, getDownloadURL
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+        // RIMOSSI i riferimenti a firebase-storage.js perché usiamo l'approccio Base64
 
         const firebaseConfig = {
             apiKey: "AIzaSyCjXEGZTPa_j0wH4cUK_LwDIEh16Q8Bhiw",
@@ -30,14 +28,11 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        // NUOVO: Inizializzo lo Storage
-        const storage = getStorage(app);
 
         window.db = db;
-        // NUOVO: Aggiungo lo storage e le sue funzioni a window.fb
+        // Manteniamo solo le funzioni di Firestore in window.fb
         window.fb = {
-            collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc,
-            storage, ref, uploadBytes, getDownloadURL
+            collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc
         };
     </script>
 </head>
@@ -179,7 +174,7 @@
                 <h3 class="card-title">Scrivi un nuovo post nel Diario</h3>
                 <input type="text" id="new-post-title" placeholder="Titolo o Data (es. Sessione 1 - Scontro a Vogler)">
 
-                <!-- NUOVO: INPUT DI TIPO FILE PER L'IMMAGINE -->
+                <!-- INPUT DI TIPO FILE PER L'IMMAGINE -->
                 <div style="margin-bottom: 10px;">
                     <label for="new-post-image-file" style="color: #aaa; font-size: 0.9rem; display: block; margin-bottom: 5px;">Allega un'immagine (opzionale):</label>
                     <input type="file" id="new-post-image-file" accept="image/*" style="background: rgba(0,0,0,0.2); border: 1px dashed var(--border-color); color: #fff; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer;">
