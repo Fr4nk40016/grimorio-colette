@@ -155,6 +155,7 @@ h1, h2, h3 {
     margin-top: 15px;
     font-size: 0.9rem;
     color: #aaa;
+    flex-wrap: wrap; /* Assicura che le stats non escano su mobile */
 }
 
 .stats-list {
@@ -233,6 +234,21 @@ h1, h2, h3 {
 
 .post-card { border-left: 3px solid var(--text-gold); }
 
+/* NUOVO: Stile per le immagini nei post */
+.post-image-container {
+    margin-bottom: 15px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.post-image-container img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain; /* Usa cover se vuoi tagliare, contain per vedere tutto */
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+}
+
 .post-footer {
     margin-top: 20px;
     border-top: 1px dashed var(--border-color);
@@ -276,6 +292,7 @@ h1, h2, h3 {
     display: flex;
     gap: 10px;
     margin-top: 10px;
+    flex-wrap: wrap; /* Migliora su mobile */
 }
 
 .add-comment-form input, .admin-panel input, .admin-panel textarea {
@@ -284,10 +301,12 @@ h1, h2, h3 {
     color: #fff;
     padding: 8px 12px;
     border-radius: 4px;
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
-.comment-author { width: 30%; }
-.comment-text { flex: 1; }
+.comment-author { width: 30%; min-width: 100px; }
+.comment-text { flex: 1; min-width: 150px; }
 
 .send-comment-btn, .primary-btn {
     background-color: var(--text-gold);
@@ -476,12 +495,14 @@ h1, h2, h3 {
     padding: 10px;
     border-radius: 6px;
     margin-bottom: 20px;
+    flex-wrap: wrap; /* Su mobile */
 }
 .coin-box {
     display: flex;
     flex-direction: column;
     align-items: center;
     font-size: 0.8rem;
+    flex: 1; /* Distribuisce lo spazio */
 }
 .coin-box input {
     width: 40px;
@@ -666,6 +687,58 @@ h1, h2, h3 {
 }
 body.light-theme .feat-desc { color: #666; }
 
+/* --- ACCORDION PER PRIVILEGI/TALENTI --- */
+.feat-item-collapsible {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.feat-item-collapsible:hover {
+    background-color: rgba(197, 160, 89, 0.05);
+    border-color: var(--text-gold);
+}
+
+.feat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+.feat-arrow {
+    font-size: 0.8rem;
+    color: var(--text-gold);
+    transition: transform 0.3s ease;
+}
+
+.feat-details {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    font-size: 0.85rem;
+    color: #aaa;
+    line-height: 1.4;
+}
+
+.feat-item-collapsible.open .feat-details {
+    max-height: 400px;
+    opacity: 1;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.feat-item-collapsible.open .feat-arrow {
+    transform: rotate(180deg);
+}
+
+
 /* --- TEMA CHIARO (PERGAMENA E ORO ANTICO) --- */
 body.light-theme {
     --bg-main: #F9F8F6;
@@ -708,129 +781,102 @@ body.light-theme .modal-content textarea {
     border-color: var(--border-color);
 }
 
+body.light-theme .feat-item-collapsible {
+    background-color: #f5f2eb;
+}
 
 /* ==========================================================
-   --- MEDIA QUERIES RESPONSIVE (TABLET E SMARTPHONE) ---
+   --- MEDIA QUERIES RESPONSIVE (MIGLIORATE PER MOBILE) ---
    ========================================================== */
 
 /* Tablet (schermi fino a 1024px) */
 @media screen and (max-width: 1024px) {
-    .sidebar {
-        width: 230px;
-        padding: 20px 15px;
-    }
-    .main-content {
-        padding: 25px;
-    }
-    .sheet-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-    .attributes-row {
-        grid-template-columns: repeat(3, 1fr);
-    }
+    .sidebar { width: 230px; padding: 20px 15px; }
+    .main-content { padding: 25px; }
+    .sheet-grid { grid-template-columns: 1fr; gap: 20px; }
+    .attributes-row { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Smartphone (schermi fino a 768px) */
 @media screen and (max-width: 768px) {
     body {
         height: auto;
-        overflow: auto;
+        overflow-y: auto; /* Permette lo scroll su mobile */
     }
+
     .app-container {
         flex-direction: column;
         height: auto;
         min-height: 100vh;
     }
+
     .sidebar {
         width: 100%;
         height: auto;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        padding: 15px;
+        padding: 15px 15px 5px 15px; /* Meno spazio in basso nel menu */
     }
+
     .nav-menu {
         margin-top: 15px;
         flex-direction: row;
         flex-wrap: wrap;
+        justify-content: center;
         gap: 8px;
     }
+
     .nav-btn {
-        flex: 1;
-        min-width: 120px;
+        flex: 1 1 calc(50% - 10px); /* I pulsanti occupano mezza larghezza */
+        min-width: 130px;
         text-align: center;
-        padding: 10px;
-        font-size: 0.9rem;
+        padding: 8px;
+        font-size: 0.85rem;
     }
-    .lock-btn {
-        margin-top: 0;
+
+    .lock-btn { margin-top: 0; }
+
+    .sidebar-footer {
+        margin-top: 10px;
+        font-size: 0.75rem;
+        border-top: 1px dashed var(--border-color);
+        padding-top: 5px;
     }
+
     .main-content {
         padding: 15px;
         overflow-y: visible;
     }
-    .hero-container {
-        grid-template-columns: 1fr;
-    }
-    .col-span-2 {
-        grid-column: span 1;
-    }
+
+    .section-header h1 { font-size: 1.6rem; }
+    .hero-container { grid-template-columns: 1fr; gap: 15px; }
+    .profile-grid { grid-template-columns: 1fr; margin-top: 25px; }
+    .col-span-2 { grid-column: span 1; } /* Rimuove le doppie colonne */
+
+    .card { padding: 15px; } /* Meno padding interno per salvare spazio */
+
     .attributes-row {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        grid-template-columns: repeat(3, 1fr); /* 3 attributi per riga su mobile è perfetto */
+        gap: 8px;
     }
-    .section-header h1 {
-        font-size: 1.8rem;
+    .attr-value { font-size: 1.5rem; }
+    .attr-value-input { font-size: 1.5rem; }
+
+    .combat-stats { flex-direction: column; gap: 10px; }
+
+    /* Sistema i form nei commenti per il mobile */
+    .add-comment-form { flex-direction: column; }
+    .comment-author { width: 100%; }
+
+    /* Assicura che le modali non escano dallo schermo */
+    .modal-content {
+        width: 95%;
+        padding: 15px;
     }
 }
 
-/* --- ACCORDION PER PRIVILEGI/TALENTI --- */
-.feat-item-collapsible {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    margin-bottom: 8px;
-    padding: 10px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.feat-item-collapsible:hover {
-    background-color: rgba(197, 160, 89, 0.05);
-    border-color: var(--text-gold);
-}
-
-.feat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: bold;
-}
-
-.feat-arrow {
-    font-size: 0.8rem;
-    color: var(--text-gold);
-    transition: transform 0.3s ease;
-}
-
-.feat-details {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
-    font-size: 0.85rem;
-    color: #aaa;
-    line-height: 1.4;
-}
-
-.feat-item-collapsible.open .feat-details {
-    max-height: 300px;
-    opacity: 1;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--border-color);
-}
-
-.feat-item-collapsible.open .feat-arrow {
-    transform: rotate(180deg);
+/* Schermi piccolissimi (es. vecchi iPhone) */
+@media screen and (max-width: 400px) {
+    .attributes-row { grid-template-columns: repeat(2, 1fr); }
+    .nav-btn { flex: 1 1 100%; }
 }

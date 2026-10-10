@@ -49,33 +49,74 @@ navBtns.forEach(btn => {
         document.getElementById(targetId)?.classList.add('active');
     });
 });
-// --- INTERAZIONI CON FIRESTORE ---
+// --- INTERAZIONI CON FIRESTORE E STORAGE ---
 window.addEventListener('load', () => {
     const db = window.db;
-    const { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc } = window.fb || {};
+    const { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, increment, query, orderBy, getDoc, setDoc, storage, ref, uploadBytes, getDownloadURL } = window.fb || {};
     if (!db)
         return;
     // === GESTIONE DIARIO ===
     const publishBtn = document.getElementById('publish-post-btn');
     const postTitleInput = document.getElementById('new-post-title');
+    const postImageFileInput = document.getElementById('new-post-image-file');
     const postContentInput = document.getElementById('new-post-content');
+    const uploadStatus = document.getElementById('upload-status');
     publishBtn?.addEventListener('click', async () => {
         const title = postTitleInput?.value.trim();
         const content = postContentInput?.value.trim();
-        if (!title || !content)
-            return alert("Compila sia il titolo che il testo del post.");
+        if (!title || !content) {
+            return alert("Compila almeno il titolo e il testo del post.");
+        }
+        // Disabilita il pulsante per evitare doppi click
+        publishBtn.disabled = true;
         try {
+            let imageUrl = null;
+            // Se l'utente ha selezionato un file, caricalo su Storage
+            if (postImageFileInput && postImageFileInput.files && postImageFileInput.files.length > 0) {
+                const file = postImageFileInput.files[0];
+                // Mostra il messaggio di caricamento
+                if (uploadStatus)
+                    uploadStatus.style.display = 'block';
+                // Crea un nome univoco per il file usando la data corrente
+                const uniqueFileName = `post_images/${Date.now()}_${file.name}`;
+                // Crea un riferimento (ref) a dove salvare il file nello Storage
+                const storageRef = ref(storage, uniqueFileName);
+                // Carica il file
+                await uploadBytes(storageRef, file);
+                // Ottieni l'URL pubblico per scaricare/visualizzare l'immagine
+                imageUrl = await getDownloadURL(storageRef);
+                // Nascondi il messaggio di caricamento
+                if (uploadStatus)
+                    uploadStatus.style.display = 'none';
+            }
+            // Salva il post su Firestore, includendo l'URL dell'immagine se presente
             await addDoc(collection(db, "posts"), {
-                title: title, content: content, createdAt: new Date(), swords: 0, shields: 0, comments: []
+                title: title,
+                content: content,
+                imageUrl: imageUrl, // Salviamo l'URL dell'immagine su Firestore
+                createdAt: new Date(),
+                swords: 0,
+                shields: 0,
+                comments: []
             });
+            // Pulisci i campi
             if (postTitleInput)
                 postTitleInput.value = "";
             if (postContentInput)
                 postContentInput.value = "";
+            if (postImageFileInput)
+                postImageFileInput.value = "";
             alert("Post pubblicato!");
         }
         catch (error) {
-            console.error("Errore:", error);
+            console.error("Errore durante la pubblicazione:", error);
+            alert("Errore durante la pubblicazione. Controlla la console per i dettagli. (Hai abilitato Firebase Storage in modalità test?)");
+            if (uploadStatus)
+                uploadStatus.style.display = 'none';
+        }
+        finally {
+            // Riabilita il pulsante
+            publishBtn.disabled = false;
         }
     });
     const journalFeed = document.getElementById('journal-feed');
@@ -89,12 +130,17 @@ window.addEventListener('load', () => {
             const postId = docSnap.id;
             const article = document.createElement('article');
             article.className = 'card post-card';
+            // Crea il blocco immagine se esiste un URL (caricato precedentemente)
+            const imageHtml = post.imageUrl
+                ? `<div class="post-image-container"><img src="${post.imageUrl}" alt="Immagine di campagna"></div>`
+                : '';
             article.innerHTML = `
-        <div class="post-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="post-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
           <h3>${post.title}</h3>
           ${isAdmin ? `<button class="delete-post-btn" data-id="${postId}" style="background: transparent; border: 1px solid #e74c3c; color: #e74c3c; border-radius: 4px; padding: 4px 8px; cursor: pointer;">🗑️ Elimina</button>` : ''}
         </div>
-        <div class="post-body"><p>${post.content}</p></div>
+        ${imageHtml}
+        <div class="post-body"><p style="white-space: pre-wrap;">${post.content}</p></div>
         <div class="post-footer">
           <div class="reactions">
             <button class="react-btn" data-id="${postId}" data-type="swords">⚔️ ${post.swords || 0}</button>
@@ -115,11 +161,14 @@ window.addEventListener('load', () => {
       `;
             journalFeed.appendChild(article);
         });
+        // NOTA: Questa funzione di eliminazione ora cancella solo il post da Firestore,
+        // non cancella l'immagine dallo Storage. Per semplicità lo lasciamo così per ora.
         document.querySelectorAll('.delete-post-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const pId = btn.getAttribute('data-id');
-                if (pId && confirm("Sei sicuro di eliminare questo post?"))
+                if (pId && confirm("Sei sicuro di eliminare questo post?")) {
                     await deleteDoc(doc(db, "posts", pId));
+                }
             });
         });
         document.querySelectorAll('.react-btn').forEach(btn => {
@@ -148,6 +197,7 @@ window.addEventListener('load', () => {
         });
     });
     // === MOTORE SCHEDA PERSONAGGIO ===
+    // ... [Il resto del codice di src/client.ts rimane identico a prima] ...
     const charDocRef = doc(db, "character", "colette-v2");
     let charData = {
         name: "Nicolette Aurelia Valen", classLevel: "Ladro - Livello 3", profBonus: 2, ac: 15,
